@@ -19,8 +19,6 @@ that affects traffic volume more drastically.
 
 # Load and explore data structure
 
-    ## [1] "C:/Users/hellm/Desktop/Class/Data-Analytics-in-R"
-
     ## Rows: 48,204
     ## Columns: 9
     ## $ holiday             <chr> "None", "None", "None", "None", "None", "None", "N…
