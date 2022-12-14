@@ -38,7 +38,7 @@ set.seed(1222)
 
 ```{r csv_extract, echo = FALSE}
 getwd()
-setwd("C:/Users/hellm/Desktop")
+#setwd( #Removed for privacy )
 df = read.csv("Metro_Interstate_Traffic_Volume.csv")
 glimpse(df)
 ```
