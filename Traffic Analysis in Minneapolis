@@ -1,0 +1,262 @@
+---
+title: "Traffic in Minneapolis"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+# Data Origin
+This data originated from UCI's Machine Learning Repository
+donated by John Hogue. The data was collected on the busy Interstate 94
+between Minneapolis and St. Paul -- a suburb or sibling-city of
+Minneapolis.
+
+# Project Goals
+The goal of this project was to build a few models to
+represent traffic volume on this busy highway, particularly based on the
+hours of the day and day of the week. I wanted to get healthy models
+built on just this particular set of variables because I was hoping to
+isolate the affect of Rain and Cloudiness on weather. In a future
+project I hope to incorporate how heavy the rain is and how dense the
+clouds are to see if that affects traffic volume more drastically.
+
+```{r setup, include = FALSE}
+# Load libraries
+# Load any additional libraries. No install.package()
+library(lubridate)
+library(tidyverse)
+library(modelr)
+
+# set.seed for reproducible results
+set.seed(1222) 
+```
+
+# Load and explore data structure
+
+```{r csv_extract, echo = FALSE}
+getwd()
+setwd("C:/Users/hellm/Desktop")
+df = read.csv("Metro_Interstate_Traffic_Volume.csv")
+glimpse(df)
+```
+
+# Data processing
+
+I removed temperatures below Kelvin 230 due to
+Minneapolis/St Paul never having recorded temperatures that low. I also
+removed any rain values above 1 meter in 1 hour since there was only 1
+case of that with a recorded 100,000 millimeters in 1 hour. Obviously,
+this would be impossible.
+
+```{r processing, cache = TRUE, dependson = c("setup", "csv_extract")}
+traffic = df %>% 
+  mutate(
+    date_time = as_datetime(date_time)) %>% 
+  mutate(
+    date = date(date_time),
+    wday = wday(date_time, label = TRUE),
+    hour = hour(date_time)) %>% 
+  filter(
+    rain_1h < 1000 & 
+    temp > 230) %>%
+  mutate(
+    sinhour = sin(2 * pi * (hour + 5) / 24))
+
+glimpse(traffic)
+
+traffic_clouds = traffic %>%
+  filter(weather_main == "Clouds")
+traffic_rain = traffic %>%
+  filter(weather_main == "Rain")
+
+```
+
+# Exploration of prediction variables
+
+```{r exploration_charts, message = FALSE}
+
+ggplot(traffic, aes(hour, traffic_volume, color = wday)) +
+  geom_smooth() +
+  geom_point(alpha = 0.1) +
+  labs(title = "First look at Hours vs. Traffic",
+       x = "Hours",
+       y = "Traffic Volume")
+
+ggplot(traffic, aes(sinhour, traffic_volume, color = wday)) +
+  geom_smooth() +
+  geom_point(alpha = 0.1) +
+  labs(title = "Hours vs. Traffic after using the sin function to linearize hours",
+       x = "Sine of Hours",
+       y = "Traffic Volume")
+
+ggplot(traffic, aes(x = weather_main, y = traffic_volume, color = weather_main)) +
+  geom_boxplot() +
+  labs(title = "Weather and Traffic",
+       subtitle = "The goal of my project was to see if I could associate cloud cover and rain with less traffic volume",
+       x = "Weather Type", 
+       y = "Traffic Volume")
+
+```
+
+# Hypothesis Testing
+
+```{r test1}
+# Placeholder
+t.test(traffic$traffic_volume, traffic_clouds$traffic_volume, alternative = "greater")
+t.test(traffic$traffic_volume, traffic_rain$traffic_volume, alternative = "greater")
+```
+
+# Split into train / test sets
+
+```{r train_split}
+traffic$id = 1:nrow(traffic)
+traffic.train = traffic %>% sample_frac(0.70)
+traffic.test = traffic %>% anti_join(traffic.train, by = "id")
+
+"If these two values are the same, then the test + train correctly equals the original."
+nrow(traffic)
+nrow(traffic.train) +
+nrow(traffic.test)
+```
+
+# Train and test models
+
+## Model 1
+
+Poor R value, but all other metrics are significant. Traffic Volume \~
+Hour
+
+```{r model1}
+
+mod1 = lm(traffic_volume ~ hour, data = traffic.train)
+summary(mod1)
+
+```
+
+## Model 2
+
+Great R Value, relates Traffic Volume \~ sin(hour) + weekday without
+intercept
+
+```{r model2}
+
+mod2 = lm(traffic_volume ~ sinhour + wday - 1, data = traffic.train)
+summary(mod2)
+
+```
+
+# Model Performance Comparison
+
+Here we have graphs that are well labeled to display what is going on
+within them.
+
+```{r summary, message = FALSE }
+
+traffic.pred = traffic.test %>% 
+  spread_residuals(mod1, mod2)
+
+grid = traffic.test %>%
+  data_grid(hour = 0:23, wday) %>%
+  mutate(sinhour = sin(2 * pi * (hour + 5) / 24)) %>%
+  spread_predictions(mod1, mod2) 
+
+ggplot(traffic.pred, aes(hour, traffic_volume)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth(se = FALSE) +
+  geom_smooth(data = grid, aes(y = grid$mod1), color = "red", se = FALSE) +
+  geom_smooth(data = grid, aes(y = grid$mod2), color = "hot pink", se = FALSE) +
+  labs(title = "Comparing models to reality",
+       subtitle = "Blue = original data, Red = Model 1 (linear), Pink = Model 2 (nonlinear)",
+       x = "Hour",
+       y = "Actual and Predicted Traffic")
+  
+ggplot(traffic.pred, aes(hour, traffic_volume, color = wday)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth(se = FALSE, size = 0.2) +
+  geom_smooth(data = grid, aes(y = grid$mod1), color = "red", se = FALSE) +
+  geom_smooth(data = grid, aes(y = grid$mod2), color = "hot pink", se = FALSE) +
+  labs(title = "Comparing models with weekday separation",
+       subtitle = "Blue = original data, Red = Model 1 (linear), Pink = Model 2 (nonlinear)",
+       x = "Hour",
+       y = "Actual and Predicted Traffic") +
+  theme(legend.position = "bottom") +
+  guides(color = (guide_legend(nrow = 1)))
+  
+
+ggplot(traffic.pred, aes(hour, mod1)) +
+  geom_smooth(color = "red") +
+  geom_smooth(aes(y = mod2), color = "green") +
+  geom_point(alpha = 0.1, color = "red") +
+  geom_point(aes(y = mod2), alpha = 0.1, color = "green") +
+  labs(title = "Residual Plot comparing both models",
+       subtitle = "Red (linear), Green (nonlinear)",
+       x = "Hour",
+       y = "Traffic Volume Residuals")
+  
+ggplot(traffic, aes(x = weather_main, y = traffic_volume, color = weather_main)) +
+  geom_boxplot() +
+  labs(title = "Old Weather and Traffic boxes",
+       x = "Weather Type", 
+       y = "Traffic Volume")
+
+ggplot(traffic.pred, aes(weather_main, mod1, color = weather_main)) + 
+  geom_boxplot() +
+  labs(title = "New weather boxes based on my linear model",
+       x = "Weather",
+       y = "Traffic Residuals")
+  
+ggplot(traffic.pred, aes(weather_main, mod2, color = weather_main)) +
+  geom_boxplot() +
+  labs(title = "New weather boxes based on my nonlinear model",
+       x = "Weather",
+       y = "Traffic Residuals")
+
+```
+
+# Final Test
+
+```{r test2}
+traffic.pred.clouds = filter(traffic.pred, weather_main == "Clouds")
+traffic.pred.rain = filter(traffic.pred, weather_main == "Rain")
+
+t.test(traffic.pred$mod2, traffic.pred.clouds$mod2, alternative = "greater")
+t.test(traffic.pred$mod2, traffic.pred.rain$mod2, alternative = "greater")
+```
+
+# Analysis and Conclusions
+
+Goal: show that Clouds or Rain has a negative effect on traffic volume
+in highway traffic.
+
+Analysis: First I did some data wrangling. Particularly, converting the
+date-time which was stored in factor form to more appropriate values and
+subsets (i.e. hours and wdays). After this, I tried to identify which
+variables likely had the most massive effect on traffic on this
+particular highway. I, of course, concluded that the hour of the day is
+the foremost value in the data set, then quickly concluded that the wday
+would be the second most important. Additionaly, I found that the curve
+of hours as an effect on traffic volume looked suspiciously like a
+double humped sin wave, so I modified the hours to reflect this possible
+distribution. This seemed to make the data more linear, but not
+necessarily perfectly. Either way, using these as my baseline for moving
+into the models, I worked on making a linear model to decide traffic
+volume simply by the hour of the day (univariate). Then, I used the
+sin(hours) and weekday as my approace for the multivariate model. This
+felt appropriate and it was immediately clear that the multivariate
+model was better due to the correlation coefficient being so high.
+Finding myself in a decent spot, I started to plot the residuals and was
+somewhat satisfied with the distribution. Before all of the modeling I
+found that I failed to reject the null hypotheses of rain and clouds
+having the same mean as the full data set.
+
+Conclusions: After working with my models and isolating the hour and
+weekday variables out, I still wasn't able to show that we could reject
+the null hypotheses. So, after all of my hardwork, I found no way to
+distinguish between these factors. After doing the project, I feel that
+day time and night time would have been another route to isolating the
+variable of weather. My hope was that my analysis on hours would have
+worked, but I wasn't able to prove anything definitively with the
+approach I used to remove hours from the analysis.
