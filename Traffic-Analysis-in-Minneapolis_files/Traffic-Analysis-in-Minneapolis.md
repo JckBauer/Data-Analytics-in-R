@@ -265,10 +265,6 @@ ggplot(traffic.pred, aes(hour, traffic_volume)) +
        y = "Actual and Predicted Traffic")
 ```
 
-    ## Warning: Use of `grid$mod1` is discouraged. Use `mod1` instead.
-
-    ## Warning: Use of `grid$mod2` is discouraged. Use `mod2` instead.
-
 ![](figure-gfm/summary-1.png)<!-- -->
 
 ``` r
@@ -284,9 +280,6 @@ ggplot(traffic.pred, aes(hour, traffic_volume, color = wday)) +
   theme(legend.position = "bottom") +
   guides(color = (guide_legend(nrow = 1)))
 ```
-
-    ## Warning: Use of `grid$mod1` is discouraged. Use `mod1` instead.
-    ## Use of `grid$mod2` is discouraged. Use `mod2` instead.
 
 ![](figure-gfm/summary-2.png)<!-- -->
 
