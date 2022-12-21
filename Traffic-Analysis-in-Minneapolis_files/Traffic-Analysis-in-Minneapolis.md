@@ -101,7 +101,7 @@ ggplot(traffic, aes(sinhour, traffic_volume, color = wday)) +
        y = "Traffic Volume")
 ```
 
-![](Traffic-Analysis-in-Minneapolis_files/figure-gfm/exploration_charts-2.png)<!-- -->
+![](figure-gfm/exploration_charts-2.png)<!-- -->
 
 ``` r
 ggplot(traffic, aes(x = weather_main, y = traffic_volume, color = weather_main)) +
@@ -112,7 +112,7 @@ ggplot(traffic, aes(x = weather_main, y = traffic_volume, color = weather_main))
        y = "Traffic Volume")
 ```
 
-![](Traffic-Analysis-in-Minneapolis_files/figure-gfm/exploration_charts-3.png)<!-- -->
+![](figure-gfm/exploration_charts-3.png)<!-- -->
 
 # Hypothesis Testing
 
@@ -269,7 +269,7 @@ ggplot(traffic.pred, aes(hour, traffic_volume)) +
 
     ## Warning: Use of `grid$mod2` is discouraged. Use `mod2` instead.
 
-![](Traffic-Analysis-in-Minneapolis_files/figure-gfm/summary-1.png)<!-- -->
+![](figure-gfm/summary-1.png)<!-- -->
 
 ``` r
 ggplot(traffic.pred, aes(hour, traffic_volume, color = wday)) +
@@ -288,7 +288,7 @@ ggplot(traffic.pred, aes(hour, traffic_volume, color = wday)) +
     ## Warning: Use of `grid$mod1` is discouraged. Use `mod1` instead.
     ## Use of `grid$mod2` is discouraged. Use `mod2` instead.
 
-![](Traffic-Analysis-in-Minneapolis_files/figure-gfm/summary-2.png)<!-- -->
+![](figure-gfm/summary-2.png)<!-- -->
 
 ``` r
 ggplot(traffic.pred, aes(hour, mod1)) +
@@ -302,7 +302,7 @@ ggplot(traffic.pred, aes(hour, mod1)) +
        y = "Traffic Volume Residuals")
 ```
 
-![](Traffic-Analysis-in-Minneapolis_files/figure-gfm/summary-3.png)<!-- -->
+![](figure-gfm/summary-3.png)<!-- -->
 
 ``` r
 ggplot(traffic, aes(x = weather_main, y = traffic_volume, color = weather_main)) +
@@ -312,7 +312,7 @@ ggplot(traffic, aes(x = weather_main, y = traffic_volume, color = weather_main))
        y = "Traffic Volume")
 ```
 
-![](Traffic-Analysis-in-Minneapolis_files/figure-gfm/summary-4.png)<!-- -->
+![](figure-gfm/summary-4.png)<!-- -->
 
 ``` r
 ggplot(traffic.pred, aes(weather_main, mod1, color = weather_main)) + 
@@ -322,7 +322,7 @@ ggplot(traffic.pred, aes(weather_main, mod1, color = weather_main)) +
        y = "Traffic Residuals")
 ```
 
-![](Traffic-Analysis-in-Minneapolis_files/figure-gfm/summary-5.png)<!-- -->
+![](figure-gfm/summary-5.png)<!-- -->
 
 ``` r
 ggplot(traffic.pred, aes(weather_main, mod2, color = weather_main)) +
@@ -332,7 +332,7 @@ ggplot(traffic.pred, aes(weather_main, mod2, color = weather_main)) +
        y = "Traffic Residuals")
 ```
 
-![](Traffic-Analysis-in-Minneapolis_files/figure-gfm/summary-6.png)<!-- -->
+![](figure-gfm/summary-6.png)<!-- -->
 
 # Final Test
 
