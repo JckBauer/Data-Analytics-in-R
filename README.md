@@ -1,3 +1,4 @@
 # Data-Analytics-in-R
 
-This was my first work on Data Analytics in R. Please view the md file for a full breakdown of my project.
+Projects that are primarilly written in R Markdown translated to Markdown.
+* [Traffic-Analysis-in-Minneapolis_files](https://github.com/JckBauer/Data-Analytics-in-R/blob/main/Traffic-Analysis-in-Minneapolis_files/Traffic-Analysis-in-Minneapolis.md)
