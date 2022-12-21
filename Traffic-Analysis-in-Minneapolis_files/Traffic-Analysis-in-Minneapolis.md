@@ -90,7 +90,7 @@ ggplot(traffic, aes(hour, traffic_volume, color = wday)) +
        y = "Traffic Volume")
 ```
 
-![](Traffic-Analysis-in-Minneapolis_files/figure-gfm/exploration_charts-1.png)<!-- -->
+![](figure-gfm/exploration_charts-1.png)<!-- -->
 
 ``` r
 ggplot(traffic, aes(sinhour, traffic_volume, color = wday)) +
