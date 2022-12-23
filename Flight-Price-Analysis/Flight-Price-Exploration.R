@@ -29,20 +29,8 @@ business_clean = business %>%
         from = as_factor(from),
         to = as_factor(to),
         date = parse_date(date, format = "%d-%m-%Y"),
-        dep_time = make_datetime(
-            year = year(date), 
-            month = month(date), 
-            day = day(date),
-            hour = hour(parse_time(dep_time, format = "%H:%M")), 
-            min = minute(parse_time(dep_time, format = "%H:%M")),
-            sec = 0),
-        arr_time = make_datetime(
-            year = year(date), 
-            month = month(date),
-            day = day(date),
-            hour = hour(parse_time(arr_time, format = "%H:%M")), 
-            min = minute(parse_time(arr_time, format = "%H:%M")), 
-            sec = 0),
+        dep_time = hms(parse_time(dep_time, format = "%H:%M")),
+        arr_time = hms(parse_time(arr_time, format = "%H:%M")),
         airline = as_factor(parse_character(airline)),
         price = as.integer(
             parse_number(
@@ -54,60 +42,53 @@ business_clean = business %>%
             str_replace("2\\+-stop", "2-or-more-stops") %>%
             trimws() %>%
             as_factor(),
-        time_taken_sec = (
-            day(parse_time(time_taken, format = "%hh %Mm")) * 60 * 60 * 24 +
-            hour(parse_time(time_taken, format = "%hh %Mm")) * 60 * 60 + 
-            minute(parse_time(time_taken, format = "%hh %Mm")) * 60),
-        time_taken = period(second = time_taken_sec),
-        flight_code = str_c(ch_code, "-", as.character(num_code))) %>%
+        time_taken = 
+            as.duration(parse_time(time_taken, format = "%hh %Mm")),
+        flight_code = str_c(ch_code, "-", as.character(num_code)),
+        price_usd = round(price * 0.01317, 2)) %>%
     select(date, airline, flight_code, everything()) %>%
-    select(-time_taken_sec, -num_code, -ch_code) %>%
+    select(-num_code, -ch_code) %>%
     rename(duration = time_taken) %>%
     mutate(class = "business")
 }
 
+# I tested with Date-times, periods, durations, and hms. I found that 
+# durations were good for length of the flight and hms was good for 
+# holding the time of day values. 
+{
+view(business_clean)
+filter(flights, arr_time <= hms(parse_time("00h 00m", format = "%hh %Mm")))
+as.duration(parse_time("24h 30m", format = "%hh %Mm"))
+}
+
 #Converting economy to more correct forms for analysis
 {
-economy_clean = economy_edit %>%
-    mutate(
-        from = as_factor(from),
-        to = as_factor(to),
-        date = parse_date(date, format = "%d-%m-%Y"),
-        dep_time = make_datetime(
-            year = year(date), 
-            month = month(date), 
-            day = day(date),
-            hour = hour(parse_time(dep_time, format = "%H:%M")), 
-            min = minute(parse_time(dep_time, format = "%H:%M")),
-            sec = 0),
-        arr_time = make_datetime(
-            year = year(date), 
-            month = month(date),
-            day = day(date),
-            hour = hour(parse_time(arr_time, format = "%H:%M")), 
-            min = minute(parse_time(arr_time, format = "%H:%M")), 
-            sec = 0),
-        airline = as_factor(parse_character(airline)),
-        price = as.integer(
-            parse_number(
-                price, 
-                locale = locale(grouping_mark = ","))),
-        stop = str_replace_all(stop, "\\t", "") %>%
-            str_replace_all("\\n", "") %>%
-            str_replace("Via\\s.*", "") %>%
-            str_replace("2\\+-stop", "2-or-more-stops") %>%
-            trimws() %>%
-            as_factor(),
-        time_taken_sec = (
-            day(parse_time(time_taken, format = "%hh %Mm")) * 60 * 60 * 24 +
-            hour(parse_time(time_taken, format = "%hh %Mm")) * 60 * 60 + 
-            minute(parse_time(time_taken, format = "%hh %Mm")) * 60),
-        time_taken = period(second = time_taken_sec),
-        flight_code = str_c(ch_code, "-", as.character(num_code))) %>%
-    select(date, airline, flight_code, everything()) %>%
-    select(-time_taken_sec, -num_code, -ch_code) %>%
-    rename(duration = time_taken) %>%
-    mutate(class = "economy")
+    economy_clean = economy_edit %>%
+        mutate(
+            from = as_factor(from),
+            to = as_factor(to),
+            date = parse_date(date, format = "%d-%m-%Y"),
+            dep_time = hms(parse_time(dep_time, format = "%H:%M")),
+            arr_time = hms(parse_time(arr_time, format = "%H:%M")),
+            airline = as_factor(parse_character(airline)),
+            price = as.integer(
+                parse_number(
+                    price, 
+                    locale = locale(grouping_mark = ","))),
+            stop = str_replace_all(stop, "\\t", "") %>%
+                str_replace_all("\\n", "") %>%
+                str_replace("Via\\s.*", "") %>%
+                str_replace("2\\+-stop", "2-or-more-stops") %>%
+                trimws() %>%
+                as_factor(),
+            time_taken = 
+                as.duration(parse_time(time_taken, format = "%hh %Mm")),
+            flight_code = str_c(ch_code, "-", as.character(num_code)),
+            price_usd = round(price * 0.01317, 2)) %>%
+        select(date, airline, flight_code, everything()) %>%
+        select(-num_code, -ch_code) %>%
+        rename(duration = time_taken) %>%
+        mutate(class = "economy")
 }
 
 #Joining the sets
@@ -119,20 +100,30 @@ flights = full_join(economy_clean, business_clean)  %>%
 #checking 
 {
 summary(flights)
+view(flights)
 nrow(flights)
 nrow(df)
 }
 
+#explorations
+{
+flights %>%
+    filter(date == date("2022-02-20") & flight_code == "UK-838")
+df %>%
+    filter(flight == "UK-838")
+df
 flights %>% 
-    group_by(date, flight_code, dep_time) %>%
+    group_by(date, flight_code, price) %>%
     count() %>%
     arrange(desc(n))
 vignette(package = 'dplyr')
+}
+
 
 #plot to see predictions to be made
 {
 df %>%
-    ggplot(aes(duration, price, color = class)) +
+    ggplot(aes(days_left, price, color = class)) +
         geom_point(alpha = 0.01) +
         geom_smooth()
 }
@@ -160,3 +151,9 @@ df_AI = df %>%
 glimpse(business_clean)
 glimpse(df_AI)
 }
+
+#ideas for analysis
+# highest price to from pair city
+# how duration affects price
+# dates with the most price changes
+# 
