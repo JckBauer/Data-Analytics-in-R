@@ -1,6 +1,6 @@
 ---
-title: "Flight Pricing"
-author: "Jackson"
+title: "Flight Price Analysis"
+author: "Jackson Bauer"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -13,18 +13,69 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Load and explore data structure
+
+```{r csv_extract, echo = FALSE}
 
 
-```{r cars}
-summary(cars)
+
 ```
 
-## Including Plots
+# Data processing
 
-You can also embed plots, for example:
+```{r processing, cache = TRUE, dependson = c("setup", "csv_extract")}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+# Exploration of prediction variables
+
+```{r exploration_charts, message = FALSE}
+
+```
+
+# Hypothesis Testing
+
+```{r test1}
+
+```
+
+# Split into train / test sets
+
+```{r train_split}
+
+```
+
+# Train and test models
+
+## Model 1
+
+```{r model1}
+
+```
+
+## Model 2
+
+```{r model2}
+
+```
+
+# Model Performance Comparison
+
+```{r summary, message = FALSE }
+
+```
+
+# Final Test
+
+```{r test2}
+
+```
+
+# Analysis and Conclusions
+
+Goal: 
+
+Analysis: 
+
+Conclusions:

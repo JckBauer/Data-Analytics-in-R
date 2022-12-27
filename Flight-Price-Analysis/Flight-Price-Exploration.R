@@ -49,16 +49,7 @@ business_clean = business %>%
     select(date, airline, flight_code, everything()) %>%
     select(-num_code, -ch_code) %>%
     rename(duration = time_taken) %>%
-    mutate(class = "business")
-}
-
-# I tested with Date-times, periods, durations, and hms. I found that 
-# durations were good for length of the flight and hms was good for 
-# holding the time of day values. 
-{
-view(business_clean)
-filter(flights, arr_time <= hms(parse_time("00h 00m", format = "%hh %Mm")))
-as.duration(parse_time("24h 30m", format = "%hh %Mm"))
+    mutate(class = "Business")
 }
 
 #Converting economy to more correct forms for analysis
@@ -88,19 +79,34 @@ as.duration(parse_time("24h 30m", format = "%hh %Mm"))
         select(date, airline, flight_code, everything()) %>%
         select(-num_code, -ch_code) %>%
         rename(duration = time_taken) %>%
-        mutate(class = "economy")
+        mutate(class = "Economy")
 }
 
 #Joining the sets
 {
+glimpse(flights)
 flights = full_join(economy_clean, business_clean)  %>%
-    mutate(class = as_factor(class))
+    mutate(class = as_factor(class), 
+           dep_time_hours = round(as.double(flights$dep_time) / (60 * 60), 2),
+           arr_time_hours = round(as.double(flights$arr_time) / (60 * 60), 2)) %>%
+    tibble()
+    flights = select(flights, date, airline, flight_code, dep_time, 
+                     dep_time_hours, from, duration, stop, arr_time, 
+                     arr_time_hours, everything())
+}
+
+# I tested with Date-times, periods, durations, and hms. I found that 
+# durations were good for length of the flight and hms was good for 
+# holding the time of day values. 
+{
+    filter(flights, arr_time <= hms(parse_time("00h 00m", format = "%hh %Mm")))
+    as.duration(parse_time("24h 30m", format = "%hh %Mm"))
 }
 
 #checking 
 {
 summary(flights)
-view(flights)
+summary(df)
 nrow(flights)
 nrow(df)
 }
@@ -108,26 +114,19 @@ nrow(df)
 #explorations
 {
 flights %>%
-    filter(date == date("2022-02-20") & flight_code == "UK-838")
+    filter(flight_code == "UK-838") %>%
+    nrow()
 df %>%
-    filter(flight == "UK-838")
-df
+    filter(flight == "UK-838") %>%
+    nrow()
+
 flights %>% 
     group_by(date, flight_code, price) %>%
     count() %>%
     arrange(desc(n))
+
 vignette(package = 'dplyr')
 }
-
-
-#plot to see predictions to be made
-{
-df %>%
-    ggplot(aes(days_left, price, color = class)) +
-        geom_point(alpha = 0.01) +
-        geom_smooth()
-}
-
 
 # Work to illuminate how duration == 0 was occurring
 {
@@ -142,11 +141,13 @@ df %>%
 #extras
 {
 #Filter to test how the data structures line-up
-business_AI = business %>%
-    filter(airline == "Air India")
+economy_clean %>%
+    filter(airline == "Air India") %>% 
+    nrow()
 
-df_AI = df %>%
-    filter(airline == "Air_India" & class == "Business")
+df %>%
+    filter(airline == "Air_India" & class == "Economy") %>%
+    nrow()
 
 glimpse(business_clean)
 glimpse(df_AI)
@@ -156,4 +157,27 @@ glimpse(df_AI)
 # highest price to from pair city
 # how duration affects price
 # dates with the most price changes
-# 
+# how class/stops affect price
+# airline affect on price
+
+#plot to see predictions to be made
+{
+glimpse(flights)
+    
+df %>%
+    ggplot(aes(days_left, price, color = class)) +
+    geom_point(alpha = 0.01) +
+    geom_smooth()
+
+ggplot(flights, aes(dep_time_hours, price_usd, color = airline)) +
+    geom_point(alpha = 0.01) + 
+    geom_smooth()
+
+ggplot(flights, aes(class, fill = airline)) +
+    geom_bar() +
+    facet_grid(class ~ stop)
+
+flights %>%
+    group_by(airline) %>%
+    count()
+}
