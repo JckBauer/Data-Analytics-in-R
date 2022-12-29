@@ -10,20 +10,104 @@ output: html_document
 # Project Goals
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(lubridate)
+
 ```
 
 # Load and explore data structure
 
 ```{r csv_extract, echo = FALSE}
 
-
+getwd()
+dir()
+setwd("C:/Users/hellm/Desktop/Projects/r_projects/Data-Analytics-in-R/Flight-Price-Analysis")
+df = read.csv("Clean_Dataset.csv")
+business = read.csv("business.csv")
+economy = read.csv("economy.csv")
 
 ```
 
 # Data processing
 
 ```{r processing, cache = TRUE, dependson = c("setup", "csv_extract")}
+
+index = str_detect(economy$time_taken, "1\\...h")
+economy_edit = filter(economy, !index)
+
+#Converting economy to more correct forms for analysis
+{
+    economy_clean = economy_edit %>%
+        mutate(
+            from = as_factor(from),
+            to = as_factor(to),
+            date = parse_date(date, format = "%d-%m-%Y"),
+            dep_time = hms(parse_time(dep_time, format = "%H:%M")),
+            arr_time = hms(parse_time(arr_time, format = "%H:%M")),
+            airline = as_factor(parse_character(airline)),
+            price = as.integer(
+                parse_number(
+                    price, 
+                    locale = locale(grouping_mark = ","))),
+            stop = str_replace_all(stop, "\\t", "") %>%
+                str_replace_all("\\n", "") %>%
+                str_replace("Via\\s.*", "") %>%
+                str_replace("2\\+-stop", "2-or-more-stops") %>%
+                trimws() %>%
+                as_factor(),
+            time_taken = 
+                as.duration(parse_time(time_taken, format = "%hh %Mm")),
+            flight_code = str_c(ch_code, "-", as.character(num_code)),
+            price_usd = round(price * 0.01317, 2)) %>%
+        select(date, airline, flight_code, everything()) %>%
+        select(-num_code, -ch_code) %>%
+        rename(duration = time_taken) %>%
+        mutate(class = "Economy")
+}
+
+#Converting business to more correct forms for analysis
+{
+business_clean = business %>%
+    mutate(
+        from = as_factor(from),
+        to = as_factor(to),
+        date = parse_date(date, format = "%d-%m-%Y"),
+        dep_time = hms(parse_time(dep_time, format = "%H:%M")),
+        arr_time = hms(parse_time(arr_time, format = "%H:%M")),
+        airline = as_factor(parse_character(airline)),
+        price = as.integer(
+            parse_number(
+                price, 
+                locale = locale(grouping_mark = ","))),
+        stop = str_replace_all(stop, "\\t", "") %>%
+            str_replace_all("\\n", "") %>%
+            str_replace("Via\\s.*", "") %>%
+            str_replace("2\\+-stop", "2-or-more-stops") %>%
+            trimws() %>%
+            as_factor(),
+        time_taken = 
+            as.duration(parse_time(time_taken, format = "%hh %Mm")),
+        flight_code = str_c(ch_code, "-", as.character(num_code)),
+        price_usd = round(price * 0.01317, 2)) %>%
+    select(date, airline, flight_code, everything()) %>%
+    select(-num_code, -ch_code) %>%
+    rename(duration = time_taken) %>%
+    mutate(class = "Business")
+}
+
+#Joining the sets
+{
+glimpse(flights)
+flights = full_join(economy_clean, business_clean)  %>%
+    mutate(class = as_factor(class), 
+           dep_time_hours = round(as.double(flights$dep_time) / (60 * 60), 2),
+           arr_time_hours = round(as.double(flights$arr_time) / (60 * 60), 2)) %>%
+    tibble()
+    flights = select(flights, date, airline, flight_code, dep_time, 
+                     dep_time_hours, from, duration, stop, arr_time, 
+                     arr_time_hours, everything())
+}
 
 ```
 
